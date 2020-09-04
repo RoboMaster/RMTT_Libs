@@ -219,6 +219,7 @@ void RMTT_Protocol::ReadSDKVersion()
 }
 
 void RMTT_Protocol::startUntilControl(){
+  pinMode(34, INPUT_PULLUP);
   RMTT_RGB::Init();
   while(!(getTelloMsgString("[TELLO] command",1000)==String("ETT ok"))){}
   RMTT_RGB::SetRGB(0,255,0);
@@ -311,4 +312,51 @@ int RMTT_Protocol::getTelloResponseInt(uint32_t timeout){
     back = back.substring(0,back.indexOf("\r\n"));
   }
   return back.substring(back.indexOf(' ') + 1, back.length()).toInt();
+}
+
+uint8_t re_tag = 0;
+uint8_t re_cnt = 0;
+
+int RMTT_Protocol::sendTelloCtrlMsg(char *cmd_str)
+{
+  re_cnt = 0;
+  while(true)
+  {
+    while(Serial1.available()){
+      Serial1.read();
+    }
+    Serial1.printf("[TELLO] Re%02x%02x %s", re_tag, re_cnt++, cmd_str);
+    // Serial.printf("[TELLO] Re%02x%02x %s", re_tag, re_cnt++, cmd_str);
+    long oldtime = millis();
+    while(!Serial1.available()){
+      long newtime = millis();
+      if((newtime-oldtime)>1000){
+        Serial1.printf("[TELLO] Re%02x%02x %s", re_tag, re_cnt++, cmd_str);
+        // Serial.printf("[TELLO] Re%02x%02x %s", re_tag, re_cnt++, cmd_str);
+        oldtime = newtime;
+      }
+    }
+
+    String back;
+    while(Serial1.available()){
+      back += String(char(Serial1.read()));
+    }
+
+    // ETT Re[tag][id] ok/error
+    // ETT Rexxxx ok/error
+    // Serial.printf(back.c_str());
+    if (back.length() >= 12)
+    {
+      if ((back.c_str()[11] == 'o') && ((back.c_str()[12] == 'k')))
+      {
+        break;
+      }
+    }
+    else
+    {
+      delay(100);
+    }
+  }
+  re_tag++;
+  return 0;
 }

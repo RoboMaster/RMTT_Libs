@@ -63,4 +63,5 @@ public:
     String getTelloResponseString(uint32_t timeout);
     int    getTelloResponseInt(uint32_t timeout);
     void   startUntilControl();
+    int    sendTelloCtrlMsg(char *cmd_str);
 };
