@@ -28,7 +28,7 @@
 #define CommonSerial Serial1
 #endif
 
-#define SDK_VERSION "esp32v1.0.0.7"
+#define SDK_VERSION "esp32v1.0.0.11"
 
 /* key doubleclick */
 #define DOUBLECLICK_INTTERVAL_TIME 500
@@ -159,7 +159,11 @@ void setup_graph()
 
 void setup()
 {
-    wifi_upgrade();
+    pinMode(34, INPUT_PULLUP);
+    if (digitalRead(34) == 0)
+    {
+        wifi_upgrade();
+    }
 
     // put your setup code here, to run once:
     Serial.begin(115200);
@@ -260,6 +264,30 @@ void loop()
         else if (!strcmp(buff, "wifiversion?"))
         {
             Serial1.printf("[TELLO] wifiversion?");
+        }
+        else if (!strcmp(buff, "wifiupgrade"))
+        {
+            int upgrade_cnt = 0;
+            while (1)
+            {
+                if (Serial.available())
+                {
+                    Serial1.write(Serial.read());
+                    RMTT_RGB::SetGreen(255);
+                }
+                if (Serial1.available())
+                {
+                    Serial.write(Serial1.read());
+                    RMTT_RGB::SetRed(255);
+                }
+                if (upgrade_cnt > 1000)
+                {
+                    RMTT_RGB::SetGreen(0);
+                    RMTT_RGB::SetRed(0);
+                    upgrade_cnt = 0;
+                }
+                upgrade_cnt++;
+            }
         }
     }
 #endif
@@ -453,6 +481,37 @@ int matrix_callback(int argc, char *argv[], char argv2[])
                 matrix_effect_move_graph(buff, argv[1][0], mv_t);
             }
 
+        }
+        /* 支持字符串中带有空格显示，单个单词要求小于40 */
+        else if (argc >= 6)
+        {
+            if (argv[2][0] != 'g')
+            {
+                char str_tmp[256] = "";
+                int len = 0;
+
+                for (int i = 0; i < argc - 4; i++)
+                {
+                    if (len + strlen(argv[4+i]) + 1 < 256)
+                    {
+                        // Serial.printf("Before %s\n %d %s %d\r\n",str_tmp, len, argv[4 + i], strlen(argv[4 + i]));
+                        memcpy(str_tmp + len , argv[4 + i], strlen(argv[4 + i]));
+                        if (i < argc - 3)
+                        {
+                            memcpy(str_tmp + len + strlen(argv[4+i]), " ", 1);
+                            len += 1;
+                        }
+                        len += strlen(argv[4+i]);
+                        // Serial.printf("After %s %d %s %d\r\n",str_tmp, len, argv[4 + i],strlen(argv[4 + i]));
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                // Serial.printf("%s %d\r\n",str_tmp, len);
+                matrix_effect_move_str((char *)str_tmp, len, argv[2][0], argv[1][0], mv_t);
+            }
         }
         else
         {
@@ -861,6 +920,8 @@ void gamesir_task(void *arg)
     uint8_t command_init = 0;
     uint8_t mac_init = 0;
 
+    uint8_t stop_cnt = 5;
+
     for (;;)
     {
         if (mac_init == 0)
@@ -937,20 +998,35 @@ void gamesir_task(void *arg)
             }
         }
 
+        /* 避免rc指令粘包 */
+        delay(10);
+
         /* Regularly send data packet to ensure the drone
         floating steadily after the controller was offline*/
-        if ((now_time - last_clean_time > 300) && (p_tt_gamesir->GetDataOffline()) && command_init)
+        if ((now_time - last_clean_time > 300) && command_init)
         {
-            tt_sdk.SetRC(0, 0, 0, 0);
+            if (p_tt_gamesir->GetDataOffline())
+            {
+                if (stop_cnt)
+                {
+                    tt_sdk.SetRC(0, 0, 0, 0);
+                    stop_cnt--;
+                }
+            }
+            else
+            {
+                /* keepactive */
+                CommonSerial.print("[TELLO] keepalive");
+                stop_cnt = 5;
+            }
             last_clean_time = millis();
         }
         else
         {
+
         }
 
         now_time = millis();
-
-        delay(10);
     }
 }
 
@@ -1022,36 +1098,31 @@ void ble_status_task(void *arg)
 void wifi_upgrade()
 {
     int cnt = 0;
-    pinMode(34, INPUT_PULLUP);
-
-    if (digitalRead(34) == 0)
+    // put your setup code here, to run once:
+    Serial.begin(921600);
+    Serial1.begin(1000000, SERIAL_8N1, 23, 18);
+    RMTT_RGB::Init();
+    RMTT_RGB::SetRGB(0, 255, 0);
+    delay(500);
+    while (1)
     {
-        // put your setup code here, to run once:
-        Serial.begin(921600);
-        Serial1.begin(1000000, SERIAL_8N1, 23, 18);
-        RMTT_RGB::Init();
-        RMTT_RGB::SetRGB(0, 255, 0);
-        delay(500);
-        while (1)
+        if (Serial.available())
         {
-            if (Serial.available())
-            {
-                Serial1.write(Serial.read());
-                RMTT_RGB::SetGreen(255);
-            }
-            if (Serial1.available())
-            {
-                Serial.write(Serial1.read());
-                RMTT_RGB::SetRed(255);
-            }
-            if (cnt > 1000)
-            {
-                RMTT_RGB::SetGreen(0);
-                RMTT_RGB::SetRed(0);
-                cnt = 0;
-            }
-            cnt++;
+            Serial1.write(Serial.read());
+            RMTT_RGB::SetGreen(255);
         }
+        if (Serial1.available())
+        {
+            Serial.write(Serial1.read());
+            RMTT_RGB::SetRed(255);
+        }
+        if (cnt > 1000)
+        {
+            RMTT_RGB::SetGreen(0);
+            RMTT_RGB::SetRed(0);
+            cnt = 0;
+        }
+        cnt++;
     }
 }
 

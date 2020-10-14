@@ -87,10 +87,10 @@ void RMTT_Protocol::Right(int16_t x)
     SendCMD((char*)s);
 }
 
-void RMTT_Protocol::Forword(int16_t x)
+void RMTT_Protocol::Forward(int16_t x)
 {
     char s[20] = {0};
-    snprintf(s, sizeof(s), "forword %d", x);
+    snprintf(s, sizeof(s), "forward %d", x);
     SendCMD((char*)s);
 }
 

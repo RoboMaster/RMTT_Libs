@@ -10,7 +10,7 @@
 
 #pragma once
 
-#define STR_PARAM_LEN 20
+#define STR_PARAM_LEN 40
 #define STR_PARAM_NUM 15
 
 /* param length <= 64 */

@@ -32,7 +32,7 @@ public:
     void Down(int16_t x);
     void Left(int16_t x);
     void Right(int16_t x);
-    void Forword(int16_t x);
+    void Forward(int16_t x);
     void Back(int16_t x);
     void CW(uint16_t x);
     void CCW(uint16_t x);

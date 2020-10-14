@@ -77,7 +77,7 @@ int cmd_handler(uint8_t *buff, uint16_t len)
     while (result != NULL && param_cnt < (STR_PARAM_NUM))
     {
         int param_len =  strlen(result);
-        if(param_len < STR_PARAM_NUM)
+        if(param_len < STR_PARAM_LEN)
         {
             memcpy(muti_param[param_cnt], result, param_len);
             muti_param[param_cnt][param_len] = '\0';

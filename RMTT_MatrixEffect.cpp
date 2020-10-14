@@ -18,7 +18,7 @@ static char string_move_mode = 'l';
 static char matrix_color_mode = 'r';
 static int  move_time_interval = MOVE_MIN_TIME;
 static int  matrix_str_len = 0;
-static uint8_t matrix_str_buff[GRAPH_PARAM_LEN] = {0};
+static uint8_t matrix_str_buff[256] = {0};
 
 static uint8_t next_cache = NONE_CACHE_INDEX;
 static uint8_t first_cache[128] = {0};
@@ -60,7 +60,7 @@ void matrix_effect_move_str(char *str, int len, char color, char move_mode, floa
         move_time_interval = max(1/freq * 1000 / 8, (float)MOVE_MIN_TIME);
     }
 
-    matrix_str_len = min(len, GRAPH_PARAM_LEN);
+    matrix_str_len = min(len, (int)sizeof(matrix_str_buff));
 
     memcpy(matrix_str_buff, str, matrix_str_len);
 
