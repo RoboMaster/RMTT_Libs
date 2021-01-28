@@ -28,7 +28,7 @@
 #define CommonSerial Serial1
 #endif
 
-#define SDK_VERSION "esp32v1.0.0.11"
+#define SDK_VERSION "esp32v1.0.0.12"
 
 /* key doubleclick */
 #define DOUBLECLICK_INTTERVAL_TIME 500
@@ -267,6 +267,7 @@ void loop()
         }
         else if (!strcmp(buff, "wifiupgrade"))
         {
+            Serial.printf("successful");
             int upgrade_cnt = 0;
             while (1)
             {
